@@ -21,7 +21,6 @@ declare global {
 const ClipboardList: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [clipboardItems, setClipboardItems] = useState<string[]>([]);
-
   useEffect(() => {
     window.electron.getClipboardData();
     window.electron.onClipboardUpdate((data) => setClipboardItems(data));
@@ -44,7 +43,7 @@ const ClipboardList: React.FC = () => {
   
 
   return (
-    <Box sx={{ width: '100%', backgroundColor: 'gray'}}>
+    <Box sx={{ width: '100vw', backgroundColor: 'gray'}}>
       <DragIndicator className='drag-button' sx={{ color: "black", bgcolor: 'gray'}}/>
       <Close className='close-button' onClick={handleCloseApp} sx={{ color: "black", bgcolor: 'gray' }}/>
       <List component="nav" aria-label="clipboard contents" sx={{bgColor: "gray"}}>
@@ -53,7 +52,18 @@ const ClipboardList: React.FC = () => {
             key={index}
             selected={selectedIndex === index}
             onClick={() => handleListItemClick(index)}
-            sx={{backgroundColor: "gray"}}
+            sx={{
+              // selected item stays darker
+              backgroundColor: selectedIndex === clipboardItems.length - 1 - index ? '#606060' : 'transparent', 
+              '&:hover': {
+                backgroundColor: '#cfcfcf', // Light gray background on hover
+              },
+              '&:active': {
+                backgroundColor: '#bdbdbd', // Darker gray background on click
+                transform: 'scale(0.98)', // Slightly shrink on click
+              },
+              transition: 'background-color 0.3s, transform 0.2s',
+            }}
           >
             <ListItemText primary={item} sx={{ color: "white" }}/>
           </ListItemButton>
