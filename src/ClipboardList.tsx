@@ -5,6 +5,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Divider from '@mui/material/Divider';
 import {DragIndicator, Close} from '@mui/icons-material';
+import { TextField } from '@mui/material';
 
 declare global {
   interface Window {
@@ -21,6 +22,8 @@ declare global {
 const ClipboardList: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [clipboardItems, setClipboardItems] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
   useEffect(() => {
     window.electron.getClipboardData();
     window.electron.onClipboardUpdate((data) => setClipboardItems(data));
@@ -37,17 +40,50 @@ const ClipboardList: React.FC = () => {
     }
   };
 
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+  };
+
+  const filteredItems = clipboardItems
+    .slice()
+    .reverse()
+    .filter((item) => item.toLowerCase().includes(searchQuery.toLowerCase()));
+
   const handleCloseApp = () => {
     window.electron.closeApp(); // Call the closeApp function
   };
+
+
   
 
   return (
     <Box sx={{ width: '100vw', backgroundColor: 'gray'}}>
       <DragIndicator className='drag-button' sx={{ color: "black", bgcolor: 'gray'}}/>
       <Close className='close-button' onClick={handleCloseApp} sx={{ color: "black", bgcolor: 'gray' }}/>
+      <Box className="search-bar" sx={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        width: '250px',
+        backgroundColor: '#2e2e2e',
+        padding: '8px',
+        borderRadius: '5px'
+      }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search clipboard..."
+          size="small"
+          value={searchQuery}
+          onChange={handleSearchChange}
+          sx={{
+            input: { color: 'white' },
+            fieldset: { borderColor: 'white' },
+          }}
+        />
+      </Box>
       <List component="nav" aria-label="clipboard contents" sx={{bgColor: "gray"}}>
-        {clipboardItems.slice().reverse().map((item, index) => (
+        {filteredItems.map((item, index) => (
           <ListItemButton
             key={index}
             selected={selectedIndex === index}
