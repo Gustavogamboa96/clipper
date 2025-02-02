@@ -31,9 +31,9 @@ const ClipboardList: React.FC = () => {
   }, []);
 
   const handleListItemClick = (index: number) => {
-    const rightIndex=clipboardItems.length - 1 - index
-    setSelectedIndex(rightIndex);
-    const textToCopy = clipboardItems[rightIndex];
+    // const rightIndex=clipboardItems.length - 1 - index
+    setSelectedIndex(index);
+    const textToCopy = filteredItems[index];
     if (textToCopy) {
       window.electron.writeToClipboard(textToCopy);
       console.log('Copied text:', textToCopy);
@@ -64,10 +64,9 @@ const ClipboardList: React.FC = () => {
         position: 'fixed',
         bottom: 0,
         left: 0,
-        width: '250px',
+        width: '100%',
         backgroundColor: '#2e2e2e',
-        padding: '8px',
-        borderRadius: '5px'
+        borderRadius: '5px',
       }}>
         <TextField
           fullWidth
@@ -78,7 +77,7 @@ const ClipboardList: React.FC = () => {
           onChange={handleSearchChange}
           sx={{
             input: { color: 'white' },
-            fieldset: { borderColor: 'white' },
+            width: '100%',
           }}
         />
       </Box>
