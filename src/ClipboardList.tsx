@@ -4,7 +4,7 @@ import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Divider from '@mui/material/Divider';
-import {DragIndicator, Close} from '@mui/icons-material';
+import { DragIndicator, Close } from '@mui/icons-material';
 import { TextField } from '@mui/material';
 
 declare global {
@@ -12,7 +12,7 @@ declare global {
     electron: {
       getClipboardData: () => void;
       onClipboardUpdate: (callback: (data: string[]) => void) => void;
-      onClipboardData: (callback: (data: string[]) => void) => void; 
+      onClipboardData: (callback: (data: string[]) => void) => void;
       writeToClipboard: (text: string) => void;
       closeApp: () => void;
     };
@@ -20,7 +20,7 @@ declare global {
 }
 
 const ClipboardList: React.FC = () => {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number>(0); // Always start with the first item selected
   const [clipboardItems, setClipboardItems] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -30,13 +30,18 @@ const ClipboardList: React.FC = () => {
     window.electron.onClipboardData((data) => setClipboardItems(data));
   }, []);
 
+  useEffect(() => {
+    if (clipboardItems.length > 0) {
+      setSelectedIndex(0); // Ensure the first item is selected initially
+      window.electron.writeToClipboard(clipboardItems[0]); // Copy first item to clipboard
+    }
+  }, [clipboardItems]);
+
   const handleListItemClick = (index: number) => {
-    // const rightIndex=clipboardItems.length - 1 - index
     setSelectedIndex(index);
-    const textToCopy = filteredItems[index];
+    const textToCopy = clipboardItems[index];
     if (textToCopy) {
       window.electron.writeToClipboard(textToCopy);
-      console.log('Copied text:', textToCopy);
     }
   };
 
@@ -45,28 +50,68 @@ const ClipboardList: React.FC = () => {
   };
 
   const filteredItems = clipboardItems
-    .slice()
-    .reverse()
-    .filter((item) => item.toLowerCase().includes(searchQuery.toLowerCase()));
+  .map((item, index) => ({ item, originalIndex: index })) // Store original index
+  .filter(({ item }) =>
+    item.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (clipboardItems.length === 0) return;
+
+      let newIndex = selectedIndex;
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        newIndex = Math.max(selectedIndex - 1, 0);
+      } else if (event.key === "ArrowDown") {
+        event.preventDefault();
+        newIndex = Math.min(selectedIndex + 1, filteredItems.length - 1);
+      }
+
+      if (newIndex !== selectedIndex) {
+        setSelectedIndex(newIndex);
+        window.electron.writeToClipboard(clipboardItems[newIndex]);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [filteredItems, selectedIndex]);
 
   const handleCloseApp = () => {
-    window.electron.closeApp(); // Call the closeApp function
+    window.electron.closeApp();
   };
 
-
-  
-
   return (
-    <Box sx={{ width: '100vw', backgroundColor: 'gray'}}>
-      <DragIndicator className='drag-button' sx={{ color: "black", bgcolor: 'gray'}}/>
-      <Close className='close-button' onClick={handleCloseApp} sx={{ color: "black", bgcolor: 'gray' }}/>
+    <Box sx={{ width: '100vw', backgroundColor: 'gray' }}>
+      <DragIndicator className="drag-button" sx={{ color: "black", bgcolor: 'gray' }} />
+      <Close className="close-button" onClick={handleCloseApp} sx={{ color: "black", bgcolor: 'gray' }} />
+      
+      <List component="nav" aria-label="clipboard contents" sx={{ bgcolor: "gray" }}>
+        {filteredItems.map(({ item, originalIndex }, index) => (
+          <ListItemButton
+            key={originalIndex}
+            selected={selectedIndex === originalIndex}
+            onClick={() => handleListItemClick(originalIndex)}
+            sx={{
+              backgroundColor: selectedIndex === originalIndex ?'#606060' :  '#808080' , // Selected item is darker
+              '&.Mui-selected': { backgroundColor: '#606060' },
+              '&:hover': { backgroundColor: '#cfcfcf' },
+              transition: 'background-color 0.3s, transform 0.2s',
+            }}
+          >
+            <ListItemText primary={item} sx={{ color: "white" }} />
+          </ListItemButton>
+        ))}
+      </List>
+
       <Box className="search-bar" sx={{
         position: 'fixed',
         bottom: 0,
         left: 0,
         width: '100%',
         backgroundColor: '#2e2e2e',
-        borderRadius: '5px',
       }}>
         <TextField
           fullWidth
@@ -75,35 +120,10 @@ const ClipboardList: React.FC = () => {
           size="small"
           value={searchQuery}
           onChange={handleSearchChange}
-          sx={{
-            input: { color: 'white' },
-            width: '100%',
-          }}
+          sx={{ input: { color: 'white' }, width: '100%' }}
         />
       </Box>
-      <List component="nav" aria-label="clipboard contents" sx={{bgColor: "gray"}}>
-        {filteredItems.map((item, index) => (
-          <ListItemButton
-            key={index}
-            selected={selectedIndex === index}
-            onClick={() => handleListItemClick(index)}
-            sx={{
-              // selected item stays darker
-              backgroundColor: selectedIndex === clipboardItems.length - 1 - index ? '#606060' : 'transparent', 
-              '&:hover': {
-                backgroundColor: '#cfcfcf', // Light gray background on hover
-              },
-              '&:active': {
-                backgroundColor: '#bdbdbd', // Darker gray background on click
-                transform: 'scale(0.98)', // Slightly shrink on click
-              },
-              transition: 'background-color 0.3s, transform 0.2s',
-            }}
-          >
-            <ListItemText primary={item} sx={{ color: "white" }}/>
-          </ListItemButton>
-        ))}
-      </List>
+
       <Divider />
     </Box>
   );
