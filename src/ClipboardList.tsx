@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Box from '@mui/material/Box';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -23,6 +23,8 @@ const ClipboardList: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState<number>(0); // Always start with the first item selected
   const [clipboardItems, setClipboardItems] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  const itemRefs = useRef<(HTMLElement | null)[]>([]);
 
   useEffect(() => {
     window.electron.getClipboardData();
@@ -72,6 +74,11 @@ const ClipboardList: React.FC = () => {
       if (newIndex !== selectedIndex) {
         setSelectedIndex(newIndex);
         window.electron.writeToClipboard(clipboardItems[newIndex]);
+
+        const selectedItemRef = itemRefs.current[filteredItems[newIndex].originalIndex];
+        if (selectedItemRef) {
+          selectedItemRef.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
       }
     };
 
@@ -84,16 +91,17 @@ const ClipboardList: React.FC = () => {
   };
 
   return (
-    <Box sx={{ width: '100vw', backgroundColor: 'gray' }}>
+    <Box sx={{ width: '100vw', backgroundColor: 'gray', display: 'flex', flexDirection: 'column', height: '100vh'}}>
       <DragIndicator className="drag-button" sx={{ color: "black", bgcolor: 'gray' }} />
       <Close className="close-button" onClick={handleCloseApp} sx={{ color: "black", bgcolor: 'gray' }} />
-      
+      <Box sx={{ flex: 1, overflowX:'hidden', overflowY: 'auto' }}>
       <List component="nav" aria-label="clipboard contents" sx={{ bgcolor: "gray" }}>
         {filteredItems.map(({ item, originalIndex }, index) => (
           <ListItemButton
             key={originalIndex}
             selected={selectedIndex === originalIndex}
             onClick={() => handleListItemClick(originalIndex)}
+            ref={(el) => (itemRefs.current[originalIndex] = el)} // Store ref for this item
             sx={{
               backgroundColor: selectedIndex === originalIndex ?'#606060' :  '#808080' , // Selected item is darker
               '&.Mui-selected': { backgroundColor: '#606060' },
@@ -105,9 +113,9 @@ const ClipboardList: React.FC = () => {
           </ListItemButton>
         ))}
       </List>
-
+      </Box>
       <Box className="search-bar" sx={{
-        position: 'fixed',
+        scale:'1.04',
         bottom: 0,
         left: 0,
         width: '100%',
@@ -120,7 +128,15 @@ const ClipboardList: React.FC = () => {
           size="small"
           value={searchQuery}
           onChange={handleSearchChange}
-          sx={{ input: { color: 'white' }, width: '100%' }}
+          sx={{
+            input: { color: 'white' }, 
+            width: '100%',
+            '& .MuiOutlinedInput-root': {
+              '&.Mui-focused fieldset': {
+                borderColor: 'transparent', // Remove the blue border on focus
+              },
+            },
+          }}
         />
       </Box>
 
