@@ -6,14 +6,14 @@
   /* overflow-y: auto; */
   position: fixed; /* Fixed position */
   top: 10vh; /* Adjust distance from the top */
-  right: 3vh; /* Adjust distance from the right */
+  right: 5vh; /* Adjust distance from the right */
   z-index: 30; 
   
 }
 .close-button{
   position: fixed; /* Fixed position */
   top: 3vh; /* Adjust distance from the top */
-  right: 3vh; /* Adjust distance from the right */
+  right: 5vh; /* Adjust distance from the right */
   z-index: 30; 
 }
 

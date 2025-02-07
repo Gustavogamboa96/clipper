@@ -25,6 +25,7 @@ const ClipboardList: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
+  const searchBarRef = useRef<HTMLInputElement | null>(null); 
 
   useEffect(() => {
     window.electron.getClipboardData();
@@ -60,6 +61,27 @@ const ClipboardList: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (clipboardItems.length === 0) return;
+
+      if (event.key === "Tab") {
+        event.preventDefault(); // Prevent default tab behavior
+        if (document.activeElement === searchBarRef.current) {
+          // Move focus to the first filtered item
+          if (filteredItems.length > 0) {
+            setSelectedIndex(filteredItems[0].originalIndex);
+            window.electron.writeToClipboard(clipboardItems[filteredItems[0].originalIndex]);
+  
+            const selectedItemRef = itemRefs.current[filteredItems[0].originalIndex];
+            if (selectedItemRef) {
+              selectedItemRef.focus();
+            }
+          }
+        } else {
+          searchBarRef.current?.focus(); // Move focus to the search bar
+        }
+        return;
+      }
+
+      
 
       let newIndex = selectedIndex;
 
@@ -128,6 +150,7 @@ const ClipboardList: React.FC = () => {
           size="small"
           value={searchQuery}
           onChange={handleSearchChange}
+          inputRef={searchBarRef}
           sx={{
             input: { color: 'white' }, 
             width: '100%',
